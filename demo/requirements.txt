@@ -1,0 +1,3 @@
+litellm
+playwright
+python-dotenv

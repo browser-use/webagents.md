@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="webagents-md" content="/webagents.md">
+  <title>Books to Browse</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; }
+
+    header { background: #2c3e50; color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 22px; }
+    header h1 span { color: #e74c3c; }
+    .search-bar { display: flex; gap: 8px; }
+    .search-bar input { padding: 8px 14px; border: none; border-radius: 4px; width: 260px; font-size: 14px; }
+    .search-bar button { padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .search-bar button:hover { background: #c0392b; }
+    .basket-link { color: white; text-decoration: none; font-size: 14px; background: #34495e; padding: 8px 14px; border-radius: 4px; cursor: pointer; border: none; }
+    .basket-link:hover { background: #4a6a8a; }
+
+    .banner { background: #ffeaa7; padding: 10px 24px; font-size: 13px; color: #856404; border-bottom: 1px solid #f0d78e; }
+
+    .container { display: flex; max-width: 1200px; margin: 0 auto; padding: 20px; gap: 20px; }
+
+    .sidebar { width: 220px; flex-shrink: 0; }
+    .sidebar h3 { font-size: 15px; margin-bottom: 10px; color: #2c3e50; }
+    .sidebar ul { list-style: none; }
+    .sidebar li { margin-bottom: 2px; }
+    .sidebar a { display: block; padding: 6px 10px; color: #555; text-decoration: none; font-size: 13px; border-radius: 4px; }
+    .sidebar a:hover, .sidebar a.active { background: #e74c3c; color: white; }
+
+    .main { flex: 1; }
+    .results-info { font-size: 14px; color: #777; margin-bottom: 16px; }
+
+    .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+    .book-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: box-shadow 0.2s; }
+    .book-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .book-cover { width: 100%; height: 240px; display: flex; align-items: center; justify-content: center; font-size: 48px; color: white; cursor: pointer; }
+    .book-info { padding: 12px; }
+    .book-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; color: #2c3e50; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+    .book-title:hover { white-space: normal; }
+    .book-author { font-size: 12px; color: #888; margin-bottom: 8px; }
+    .book-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .book-price { font-size: 16px; font-weight: 700; color: #e74c3c; }
+    .book-rating { font-size: 12px; color: #f39c12; }
+    .book-stock { font-size: 11px; color: #27ae60; margin-bottom: 8px; }
+    .book-stock.out { color: #e74c3c; }
+    .add-btn { width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .add-btn:hover { background: #219a52; }
+    .add-btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; position: relative; }
+    .modal-close { position: absolute; top: 12px; right: 16px; font-size: 24px; cursor: pointer; color: #aaa; background: none; border: none; }
+    .modal-close:hover { color: #333; }
+    .modal h2 { margin-bottom: 4px; color: #2c3e50; }
+    .modal .author { color: #888; margin-bottom: 12px; }
+    .modal .description { color: #555; line-height: 1.6; margin-bottom: 16px; font-size: 14px; }
+    .modal .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+    .modal .detail-label { color: #888; }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
+    .pagination button { padding: 8px 14px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; }
+    .pagination button.active { background: #e74c3c; color: white; border-color: #e74c3c; }
+    .pagination button:hover:not(.active) { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Books to <span>Browse</span></h1>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search books..." />
+    <button onclick="handleSearch()">Search</button>
+  </div>
+  <button class="basket-link" onclick="showBasket()">Basket (<span id="basketCount">0</span>)</button>
+</header>
+
+<div class="banner">
+  This is a demo website for the <strong>webagents.md</strong> specification. It exposes AI-accessible tools via <code>/webagents.md</code>.
+</div>
+
+<div class="container">
+  <aside class="sidebar">
+    <h3>Categories</h3>
+    <ul id="categoryList"></ul>
+  </aside>
+  <div class="main">
+    <div class="results-info" id="resultsInfo"></div>
+    <div class="book-grid" id="bookGrid"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Book Data ──
+var BOOKS = [
+  { id: "b001", title: "The Great Gatsby", author: "F. Scott Fitzgerald", price: 12.99, rating: 4, category: "Classics", inStock: true, description: "A portrait of the Jazz Age in all of its decadence and excess, following the mysterious millionaire Jay Gatsby and his obsession with Daisy Buchanan." },
+  { id: "b002", title: "To Kill a Mockingbird", author: "Harper Lee", price: 14.49, rating: 5, category: "Classics", inStock: true, description: "The unforgettable novel of a childhood in a sleepy Southern town and the crisis of conscience that rocked it." },
+  { id: "b003", title: "1984", author: "George Orwell", price: 11.99, rating: 5, category: "Science Fiction", inStock: true, description: "A dystopian novel set in a totalitarian society ruled by Big Brother, exploring themes of surveillance and control." },
+  { id: "b004", title: "Dune", author: "Frank Herbert", price: 15.99, rating: 5, category: "Science Fiction", inStock: true, description: "Set in the distant future, this epic tale follows Paul Atreides as his family takes control of the desert planet Arrakis." },
+  { id: "b005", title: "The Hobbit", author: "J.R.R. Tolkien", price: 13.49, rating: 5, category: "Fantasy", inStock: true, description: "Bilbo Baggins is swept into a quest to reclaim the lost Dwarf Kingdom of Erebor from the fearsome dragon Smaug." },
+  { id: "b006", title: "A Game of Thrones", author: "George R.R. Martin", price: 16.99, rating: 4, category: "Fantasy", inStock: true, description: "The first volume of the epic fantasy series set in the fictional continents of Westeros and Essos." },
+  { id: "b007", title: "The Da Vinci Code", author: "Dan Brown", price: 10.99, rating: 3, category: "Mystery", inStock: true, description: "A murder inside the Louvre and clues in Da Vinci paintings lead to the discovery of a religious mystery." },
+  { id: "b008", title: "Gone Girl", author: "Gillian Flynn", price: 13.99, rating: 4, category: "Mystery", inStock: true, description: "On a warm summer morning in Missouri, Nick Dunne's wife Amy suddenly disappears." },
+  { id: "b009", title: "The Silent Patient", author: "Alex Michaelides", price: 14.99, rating: 4, category: "Mystery", inStock: false, description: "Alicia Berenson's life is seemingly perfect until one evening she shoots her husband five times and never speaks another word." },
+  { id: "b010", title: "Sapiens", author: "Yuval Noah Harari", price: 18.99, rating: 5, category: "Non-Fiction", inStock: true, description: "A brief history of humankind, exploring how Homo sapiens came to dominate the world." },
+  { id: "b011", title: "Educated", author: "Tara Westover", price: 15.49, rating: 5, category: "Non-Fiction", inStock: true, description: "A memoir about a woman who grows up in a survivalist family and eventually earns a PhD from Cambridge University." },
+  { id: "b012", title: "Atomic Habits", author: "James Clear", price: 16.49, rating: 5, category: "Non-Fiction", inStock: true, description: "A practical guide to building good habits and breaking bad ones using small, incremental changes." },
+  { id: "b013", title: "Pride and Prejudice", author: "Jane Austen", price: 9.99, rating: 5, category: "Classics", inStock: true, description: "The story of Elizabeth Bennet as she deals with issues of manners, upbringing, morality, and marriage in Regency-era England." },
+  { id: "b014", title: "The Catcher in the Rye", author: "J.D. Salinger", price: 11.49, rating: 4, category: "Classics", inStock: true, description: "The story of Holden Caulfield's experiences in New York City after being expelled from prep school." },
+  { id: "b015", title: "Neuromancer", author: "William Gibson", price: 12.99, rating: 4, category: "Science Fiction", inStock: true, description: "The pioneering cyberpunk novel about a washed-up computer hacker hired for one last job." },
+  { id: "b016", title: "The Left Hand of Darkness", author: "Ursula K. Le Guin", price: 13.99, rating: 5, category: "Science Fiction", inStock: false, description: "A groundbreaking work of feminist science fiction set on a planet where people have no fixed gender." },
+  { id: "b017", title: "The Name of the Wind", author: "Patrick Rothfuss", price: 14.99, rating: 5, category: "Fantasy", inStock: true, description: "The tale of Kvothe, from his childhood in a troupe of traveling players to years spent as a near-feral orphan." },
+  { id: "b018", title: "Mistborn", author: "Brandon Sanderson", price: 13.49, rating: 4, category: "Fantasy", inStock: true, description: "In a world where ash falls from the sky, a young street urchin discovers she has the powers of a Mistborn." },
+  { id: "b019", title: "The Girl with the Dragon Tattoo", author: "Stieg Larsson", price: 14.49, rating: 4, category: "Mystery", inStock: true, description: "A journalist and a computer hacker team up to investigate a wealthy family's dark secrets." },
+  { id: "b020", title: "Big Little Lies", author: "Liane Moriarty", price: 12.99, rating: 4, category: "Mystery", inStock: true, description: "A tale of murder and mischief set in a small beachside town, where nothing is as it seems." },
+  { id: "b021", title: "Thinking, Fast and Slow", author: "Daniel Kahneman", price: 17.99, rating: 4, category: "Non-Fiction", inStock: true, description: "Nobel laureate Daniel Kahneman explores the two systems that drive the way we think." },
+  { id: "b022", title: "Becoming", author: "Michelle Obama", price: 16.99, rating: 5, category: "Non-Fiction", inStock: true, description: "An intimate, powerful memoir by the former First Lady of the United States." },
+  { id: "b023", title: "The Road", author: "Cormac McCarthy", price: 13.99, rating: 5, category: "Classics", inStock: true, description: "A father and his young son walk through a burned America, heading toward the coast in a post-apocalyptic world." },
+  { id: "b024", title: "Brave New World", author: "Aldous Huxley", price: 10.99, rating: 4, category: "Science Fiction", inStock: true, description: "A dystopian novel set in a futuristic World State where citizens are conditioned into an intelligence-based social hierarchy." }
+];
+
+var GRADIENTS = ["#667eea,#764ba2", "#e74c3c,#c0392b", "#2ecc71,#27ae60", "#f39c12,#e67e22", "#9b59b6,#8e44ad", "#1abc9c,#16a085", "#3498db,#2980b9", "#e67e22,#d35400"];
+
+// ── State ──
+var basket = [];
+var currentFilter = null;
+var currentSearch = "";
+var currentPage = 1;
+var BOOKS_PER_PAGE = 12;
+
+// ── webagents.md global tool functions ──
+globalThis.searchBooks = function(query) {
+  if (typeof query !== "string") throw new Error("query must be a string");
+  var q = query.toLowerCase();
+  return BOOKS.filter(function(b) {
+    return b.title.toLowerCase().indexOf(q) !== -1 || b.author.toLowerCase().indexOf(q) !== -1;
+  }).map(function(b) {
+    return { id: b.id, title: b.title, author: b.author, price: b.price, rating: b.rating, category: b.category, inStock: b.inStock };
+  });
+};
+
+globalThis.getBookDetails = function(bookId) {
+  var book = BOOKS.find(function(b) { return b.id === bookId; });
+  if (!book) throw new Error("Book not found: " + bookId);
+  return Object.assign({}, book);
+};
+
+globalThis.filterByCategory = function(category) {
+  return BOOKS.filter(function(b) {
+    return b.category.toLowerCase() === category.toLowerCase();
+  }).map(function(b) {
+    return { id: b.id, title: b.title, author: b.author, price: b.price, rating: b.rating, category: b.category, inStock: b.inStock };
+  });
+};
+
+globalThis.addToBasket = function(bookId, quantity) {
+  quantity = quantity || 1;
+  var book = BOOKS.find(function(b) { return b.id === bookId; });
+  if (!book) throw new Error("Book not found: " + bookId);
+  if (!book.inStock) throw new Error("Book is out of stock: " + book.title);
+  var existing = basket.find(function(i) { return i.bookId === bookId; });
+  if (existing) {
+    existing.quantity += quantity;
+  } else {
+    basket.push({ bookId: bookId, title: book.title, quantity: quantity, price: book.price });
+  }
+  updateBasketCount();
+  showToast('Added "' + book.title + '" to basket');
+  return { success: true, basketCount: basket.reduce(function(s, i) { return s + i.quantity; }, 0), item: { title: book.title, quantity: quantity, price: book.price } };
+};
+
+globalThis.getBasket = function() {
+  var items = basket.map(function(i) { return Object.assign({}, i); });
+  var total = items.reduce(function(s, i) { return s + i.price * i.quantity; }, 0);
+  return { items: items, total: Math.round(total * 100) / 100, itemCount: items.reduce(function(s, i) { return s + i.quantity; }, 0) };
+};
+
+globalThis.removeFromBasket = function(bookId) {
+  var idx = basket.findIndex(function(i) { return i.bookId === bookId; });
+  if (idx === -1) throw new Error("Book not in basket: " + bookId);
+  basket.splice(idx, 1);
+  updateBasketCount();
+  return { success: true, basketCount: basket.reduce(function(s, i) { return s + i.quantity; }, 0) };
+};
+
+// ── UI ──
+function getGradient(id) {
+  var ci = parseInt(id.replace("b", ""), 10) % GRADIENTS.length;
+  var parts = GRADIENTS[ci].split(",");
+  return "linear-gradient(135deg," + parts[0] + "," + parts[1] + ")";
+}
+
+function stars(n) {
+  return "\u2605".repeat(n) + "\u2606".repeat(5 - n);
+}
+
+function getFilteredBooks() {
+  var books = BOOKS;
+  if (currentFilter) books = books.filter(function(b) { return b.category === currentFilter; });
+  if (currentSearch) {
+    var q = currentSearch.toLowerCase();
+    books = books.filter(function(b) {
+      return b.title.toLowerCase().indexOf(q) !== -1 || b.author.toLowerCase().indexOf(q) !== -1;
+    });
+  }
+  return books;
+}
+
+function renderBooks() {
+  var books = getFilteredBooks();
+  var totalPages = Math.ceil(books.length / BOOKS_PER_PAGE);
+  if (currentPage > totalPages) currentPage = 1;
+  var start = (currentPage - 1) * BOOKS_PER_PAGE;
+  var pageBooks = books.slice(start, start + BOOKS_PER_PAGE);
+  var label = currentFilter || (currentSearch ? 'Search: "' + currentSearch + '"' : "All books");
+  document.getElementById("resultsInfo").textContent = books.length + " result" + (books.length !== 1 ? "s" : "") + " \u2014 " + label;
+
+  document.getElementById("bookGrid").innerHTML = pageBooks.map(function(b) {
+    return '<div class="book-card">' +
+      '<div class="book-cover" style="background:' + getGradient(b.id) + '" onclick="openDetail(\'' + b.id + '\')">\ud83d\udcda</div>' +
+      '<div class="book-info">' +
+        '<div class="book-title" title="' + b.title + '" onclick="openDetail(\'' + b.id + '\')">' + b.title + '</div>' +
+        '<div class="book-author">' + b.author + '</div>' +
+        '<div class="book-meta"><span class="book-price">$' + b.price.toFixed(2) + '</span><span class="book-rating">' + stars(b.rating) + '</span></div>' +
+        '<div class="book-stock' + (b.inStock ? '' : ' out') + '">' + (b.inStock ? 'In stock' : 'Out of stock') + '</div>' +
+        '<button class="add-btn" onclick="handleAdd(\'' + b.id + '\')"' + (b.inStock ? '' : ' disabled') + '>' + (b.inStock ? 'Add to basket' : 'Unavailable') + '</button>' +
+      '</div></div>';
+  }).join("");
+
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  var el = document.getElementById("pagination");
+  if (totalPages <= 1) { el.innerHTML = ""; return; }
+  var html = "";
+  for (var i = 1; i <= totalPages; i++) {
+    html += '<button class="' + (i === currentPage ? 'active' : '') + '" onclick="goPage(' + i + ')">' + i + '</button>';
+  }
+  el.innerHTML = html;
+}
+
+function renderCategories() {
+  var cats = [];
+  BOOKS.forEach(function(b) { if (cats.indexOf(b.category) === -1) cats.push(b.category); });
+  cats.sort();
+  document.getElementById("categoryList").innerHTML =
+    '<li><a href="#"' + (!currentFilter ? ' class="active"' : '') + ' onclick="filterCat(null); return false;">All Books</a></li>' +
+    cats.map(function(c) {
+      return '<li><a href="#"' + (currentFilter === c ? ' class="active"' : '') + ' onclick="filterCat(\'' + c + '\'); return false;">' + c + '</a></li>';
+    }).join("");
+}
+
+// ── Handlers ──
+function handleSearch() {
+  currentSearch = document.getElementById("searchInput").value.trim();
+  currentFilter = null;
+  currentPage = 1;
+  renderCategories();
+  renderBooks();
+}
+
+document.getElementById("searchInput").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") handleSearch();
+});
+
+function filterCat(cat) {
+  currentFilter = cat;
+  currentSearch = "";
+  currentPage = 1;
+  document.getElementById("searchInput").value = "";
+  renderCategories();
+  renderBooks();
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderBooks();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function handleAdd(bookId) {
+  globalThis.addToBasket(bookId);
+}
+
+function updateBasketCount() {
+  document.getElementById("basketCount").textContent = basket.reduce(function(s, i) { return s + i.quantity; }, 0);
+}
+
+function showToast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(function() { t.classList.remove("show"); }, 2000);
+}
+
+// ── Modal ──
+function openDetail(bookId) {
+  var book = globalThis.getBookDetails(bookId);
+  document.getElementById("modal").innerHTML =
+    '<button class="modal-close" onclick="document.getElementById(\'modalOverlay\').classList.remove(\'open\')">&times;</button>' +
+    '<h2>' + book.title + '</h2>' +
+    '<div class="author">by ' + book.author + '</div>' +
+    '<p class="description">' + book.description + '</p>' +
+    '<div class="detail-row"><span class="detail-label">Price</span><span>$' + book.price.toFixed(2) + '</span></div>' +
+    '<div class="detail-row"><span class="detail-label">Rating</span><span>' + stars(book.rating) + '</span></div>' +
+    '<div class="detail-row"><span class="detail-label">Category</span><span>' + book.category + '</span></div>' +
+    '<div class="detail-row"><span class="detail-label">Availability</span><span style="color:' + (book.inStock ? '#27ae60' : '#e74c3c') + '">' + (book.inStock ? 'In stock' : 'Out of stock') + '</span></div>' +
+    '<br><button class="add-btn" onclick="handleAdd(\'' + book.id + '\'); document.getElementById(\'modalOverlay\').classList.remove(\'open\');"' + (book.inStock ? '' : ' disabled') + ' style="max-width:200px">' + (book.inStock ? 'Add to basket' : 'Unavailable') + '</button>';
+  document.getElementById("modalOverlay").classList.add("open");
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById("modalOverlay")) {
+    document.getElementById("modalOverlay").classList.remove("open");
+  }
+}
+
+function showBasket() {
+  var b = globalThis.getBasket();
+  var html;
+  if (b.items.length === 0) {
+    html = '<button class="modal-close" onclick="document.getElementById(\'modalOverlay\').classList.remove(\'open\')">&times;</button>' +
+      '<h2>Your Basket</h2><p class="description" style="margin-top:12px">Your basket is empty.</p>';
+  } else {
+    html = '<button class="modal-close" onclick="document.getElementById(\'modalOverlay\').classList.remove(\'open\')">&times;</button>' +
+      '<h2>Your Basket</h2><div style="margin-top:12px">' +
+      b.items.map(function(i) {
+        return '<div class="detail-row" style="margin-bottom:12px"><span>' + i.title + ' &times; ' + i.quantity + '</span>' +
+          '<span>$' + (i.price * i.quantity).toFixed(2) +
+          ' <button onclick="removeItem(\'' + i.bookId + '\')" style="margin-left:8px;background:none;border:none;color:#e74c3c;cursor:pointer;font-size:16px">&times;</button></span></div>';
+      }).join("") +
+      '<hr style="margin:12px 0;border:none;border-top:1px solid #eee">' +
+      '<div class="detail-row"><strong>Total</strong><strong>$' + b.total.toFixed(2) + '</strong></div></div>';
+  }
+  document.getElementById("modal").innerHTML = html;
+  document.getElementById("modalOverlay").classList.add("open");
+}
+
+function removeItem(bookId) {
+  globalThis.removeFromBasket(bookId);
+  showBasket();
+}
+
+// ── Init ──
+renderCategories();
+renderBooks();
+</script>
+</body>
+</html>
