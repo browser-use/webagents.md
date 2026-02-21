@@ -1,5 +1,7 @@
 # webagents.md
 
+https://github.com/user-attachments/assets/27542a07-350f-4c26-8fb4-36d8c8fc7e1a
+
 This is a proposed spec and Python SDK that lets websites expose tools for AI agents to call directly in the browser. A site publishes a Markdown file describing its tools, and any agent can discover and use them.
 
 If adopted broadly, `webagents.md` is how AI agents navigate the web autonomously--not by clicking through interfaces built for humans, but by calling functions that websites explicitly provide to them.
