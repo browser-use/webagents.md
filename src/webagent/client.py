@@ -128,8 +128,10 @@ class AgentClient:
             f"{context}\n\n"
             "Use the execute_js tool to write JavaScript code that calls these functions. "
             "Use `await` for async calls and `return` the final result. "
-            "You can chain multiple calls in a single code block. "
-            "When you're done, summarize what you did."
+            "Chain multiple calls in a single code block when needed. "
+            "Avoid asking the user for clarification. If you need information to complete a request, "
+            "use the available tools to look it up yourself whenever possible. "
+            "When you're done, briefly summarize what you did."
         )
         if task:
             prompt += f"\n\nTask: {task}"

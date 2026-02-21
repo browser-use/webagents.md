@@ -9,6 +9,7 @@ A working demo of the `webagents.md` spec: a mock bookstore website with AI-acce
 | `index.html` | Self-contained bookstore (HTML/CSS/JS, no build step, no dependencies) |
 | `webagents.md` | The webagent manifest declaring 6 tools |
 | `run_agent.py` | AI agent that discovers the tools and uses them to complete a task |
+| `demo.py` | Interactive demo — opens browser, displays discovered tools, then lets you type tasks |
 
 ## Quick start
 
@@ -33,6 +34,14 @@ python run_agent.py
 The script starts a local server automatically, discovers the site's `webagents.md`, and runs the agent.
 
 > The webagent SDK is imported directly from `../src` — no `pip install` needed for it.
+
+### Interactive demo
+
+`demo.py` is an interactive version. It opens the browser, discovers `webagents.md`, displays the tools and TypeScript declarations, then prompts you for tasks.
+
+```bash
+python demo.py [--model MODEL]
+```
 
 ### Custom tasks and models
 

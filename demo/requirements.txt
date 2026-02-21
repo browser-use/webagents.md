@@ -1,3 +1,4 @@
 litellm
 playwright
 python-dotenv
+rich

@@ -61,8 +61,12 @@
     .modal .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
     .modal .detail-label { color: #888; }
 
-    .toast { position: fixed; bottom: 24px; right: 24px; background: #27ae60; color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-    .toast.show { opacity: 1; }
+    .toast { position: fixed; top: 72px; right: 24px; background: #27ae60; color: white; padding: 14px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; z-index: 200; opacity: 0; transform: translateY(-8px); transition: opacity 0.3s, transform 0.3s; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .basket-link { transition: background 0.3s, transform 0.2s; }
+    .basket-link.pulse { background: #27ae60 !important; transform: scale(1.15); }
+    .basket-link.pulse-settle { transform: scale(1); background: #34495e; }
 
     .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
     .pagination button { padding: 8px 14px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 13px; }
@@ -297,7 +301,14 @@ function handleAdd(bookId) {
 }
 
 function updateBasketCount() {
-  document.getElementById("basketCount").textContent = basket.reduce(function(s, i) { return s + i.quantity; }, 0);
+  var btn = document.querySelector(".basket-link");
+  var count = basket.reduce(function(s, i) { return s + i.quantity; }, 0);
+  document.getElementById("basketCount").textContent = count;
+  btn.classList.remove("pulse", "pulse-settle");
+  void btn.offsetWidth;
+  btn.classList.add("pulse");
+  setTimeout(function() { btn.classList.remove("pulse"); btn.classList.add("pulse-settle"); }, 300);
+  setTimeout(function() { btn.classList.remove("pulse-settle"); }, 600);
 }
 
 function showToast(msg) {
